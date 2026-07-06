@@ -23,3 +23,15 @@ Non-obvious notes for running/developing here:
   in-memory DB). To reset seed data, stop the server and delete `server/data/`.
 - **Tests are backend-only** (`npm test` → Vitest + Supertest against the Express app with
   an in-memory SQLite DB). There is currently no frontend test suite.
+- **KPI/SLA/aging/trends logic lives in `server/src/metrics.ts`** as pure functions
+  (`enrich`, `computeKpis`, `computeAging`, `computeTrends`) operating on messages relative
+  to a `now` date; the repository just calls them. SLA thresholds and the mailbox address
+  come from `server/src/config.ts` (env-overridable: `MAILBOX_ADDRESS`, `ACK_SLA_MINUTES`,
+  `COMPLETION_SLA_MINUTES`).
+- **Changing the DB schema requires recreating the DB.** The schema is created once via
+  `CREATE TABLE IF NOT EXISTS`; there are no migrations. After editing the schema or the
+  seed generator, delete `server/data/` and restart so it re-seeds. Seed data is generated
+  relative to the current time, so aging/trends stay meaningful whenever it is reseeded.
+- **Data is currently seeded, not live.** Ingesting the real mailbox needs a Microsoft Graph
+  connector + Azure AD credentials (`Mail.Read`); map Graph messages onto the `messages`
+  table columns.

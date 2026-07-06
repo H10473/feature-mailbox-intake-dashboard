@@ -1,6 +1,7 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import type Database from "better-sqlite3";
+import { MAILBOX_ADDRESS, ACK_SLA_MINUTES, COMPLETION_SLA_MINUTES } from "./config.js";
 import { MessageRepository, NotFoundError, ValidationError } from "./repository.js";
 
 export function createApp(db: Database.Database): Express {
@@ -14,8 +15,28 @@ export function createApp(db: Database.Database): Express {
     res.json({ status: "ok", time: new Date().toISOString() });
   });
 
-  app.get("/api/stats", (_req, res) => {
-    res.json(repo.stats());
+  app.get("/api/config", (_req, res) => {
+    res.json({
+      mailbox: MAILBOX_ADDRESS,
+      ackSlaMinutes: ACK_SLA_MINUTES,
+      completionSlaMinutes: COMPLETION_SLA_MINUTES,
+    });
+  });
+
+  app.get("/api/kpis", (_req, res) => {
+    res.json(repo.kpis());
+  });
+
+  app.get("/api/aging", (_req, res) => {
+    res.json(repo.aging());
+  });
+
+  app.get("/api/trends", (req, res) => {
+    const days = req.query.days ? Number(req.query.days) : 14;
+    if (!Number.isFinite(days) || days < 1 || days > 90) {
+      throw new ValidationError("days must be between 1 and 90");
+    }
+    res.json(repo.trends(days));
   });
 
   app.get("/api/messages", (req, res) => {
@@ -34,6 +55,14 @@ export function createApp(db: Database.Database): Express {
 
   app.patch("/api/messages/:id", (req, res) => {
     res.json(repo.update(Number(req.params.id), req.body ?? {}));
+  });
+
+  app.post("/api/messages/:id/acknowledge", (req, res) => {
+    res.json(repo.acknowledge(Number(req.params.id)));
+  });
+
+  app.post("/api/messages/:id/complete", (req, res) => {
+    res.json(repo.complete(Number(req.params.id)));
   });
 
   app.delete("/api/messages/:id", (req, res) => {

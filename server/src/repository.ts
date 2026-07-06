@@ -1,9 +1,20 @@
 import type Database from "better-sqlite3";
+import { MAILBOX_ADDRESS } from "./config.js";
+import {
+  computeAging,
+  computeKpis,
+  computeTrends,
+  enrich,
+  type AgingBucket,
+  type Kpis,
+  type TrendPoint,
+} from "./metrics.js";
 import {
   CHANNELS,
   PRIORITIES,
   STATUSES,
   type CreateIntakeInput,
+  type EnrichedMessage,
   type IntakeMessage,
   type Status,
   type UpdateIntakeInput,
@@ -15,25 +26,30 @@ export class NotFoundError extends Error {}
 export class MessageRepository {
   constructor(private readonly db: Database.Database) {}
 
-  list(status?: string): IntakeMessage[] {
+  private allRaw(): IntakeMessage[] {
+    return this.db
+      .prepare("SELECT * FROM messages ORDER BY datetime(receivedAt) DESC, id DESC")
+      .all() as IntakeMessage[];
+  }
+
+  list(status: string | undefined, now: Date = new Date()): EnrichedMessage[] {
+    let rows: IntakeMessage[];
     if (status && status !== "all") {
       if (!STATUSES.includes(status as Status)) {
         throw new ValidationError(`Invalid status filter: ${status}`);
       }
-      return this.db
+      rows = this.db
         .prepare(
-          "SELECT * FROM messages WHERE status = ? ORDER BY datetime(createdAt) DESC, id DESC"
+          "SELECT * FROM messages WHERE status = ? ORDER BY datetime(receivedAt) DESC, id DESC"
         )
         .all(status) as IntakeMessage[];
+    } else {
+      rows = this.allRaw();
     }
-    return this.db
-      .prepare(
-        "SELECT * FROM messages ORDER BY datetime(createdAt) DESC, id DESC"
-      )
-      .all() as IntakeMessage[];
+    return rows.map((r) => enrich(r, now));
   }
 
-  get(id: number): IntakeMessage {
+  getRaw(id: number): IntakeMessage {
     const row = this.db
       .prepare("SELECT * FROM messages WHERE id = ?")
       .get(id) as IntakeMessage | undefined;
@@ -41,7 +57,11 @@ export class MessageRepository {
     return row;
   }
 
-  create(input: CreateIntakeInput): IntakeMessage {
+  get(id: number, now: Date = new Date()): EnrichedMessage {
+    return enrich(this.getRaw(id), now);
+  }
+
+  create(input: CreateIntakeInput, now: Date = new Date()): EnrichedMessage {
     const sender = (input.sender ?? "").trim();
     const subject = (input.subject ?? "").trim();
     if (!sender) throw new ValidationError("sender is required");
@@ -56,27 +76,32 @@ export class MessageRepository {
       throw new ValidationError(`Invalid priority: ${priority}`);
     }
 
-    const now = new Date().toISOString();
+    const nowIso = now.toISOString();
+    const receivedAt = input.receivedAt ?? nowIso;
     const result = this.db
       .prepare(
-        `INSERT INTO messages (sender, subject, body, channel, priority, status, assignee, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, 'new', ?, ?, ?)`
+        `INSERT INTO messages
+           (messageId, mailbox, sender, subject, body, channel, priority, status, assignee, receivedAt, firstResponseAt, resolvedAt, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, NULL, NULL, ?, ?)`
       )
       .run(
+        null,
+        MAILBOX_ADDRESS,
         sender,
         subject,
         input.body ?? "",
         channel,
         priority,
         input.assignee ?? null,
-        now,
-        now
+        receivedAt,
+        nowIso,
+        nowIso
       );
-    return this.get(Number(result.lastInsertRowid));
+    return this.get(Number(result.lastInsertRowid), now);
   }
 
-  update(id: number, input: UpdateIntakeInput): IntakeMessage {
-    const existing = this.get(id);
+  update(id: number, input: UpdateIntakeInput, now: Date = new Date()): EnrichedMessage {
+    const existing = this.getRaw(id);
 
     const status = input.status ?? existing.status;
     const priority = input.priority ?? existing.priority;
@@ -89,13 +114,39 @@ export class MessageRepository {
     const assignee =
       input.assignee === undefined ? existing.assignee : input.assignee;
 
-    const now = new Date().toISOString();
     this.db
       .prepare(
         "UPDATE messages SET status = ?, priority = ?, assignee = ?, updatedAt = ? WHERE id = ?"
       )
-      .run(status, priority, assignee, now, id);
-    return this.get(id);
+      .run(status, priority, assignee, now.toISOString(), id);
+    return this.get(id, now);
+  }
+
+  /** Record the first response / acknowledgement (starts the SLA clock stop). */
+  acknowledge(id: number, now: Date = new Date()): EnrichedMessage {
+    const existing = this.getRaw(id);
+    const nowIso = now.toISOString();
+    const firstResponseAt = existing.firstResponseAt ?? nowIso;
+    const status = existing.status === "new" ? "in_progress" : existing.status;
+    this.db
+      .prepare(
+        "UPDATE messages SET firstResponseAt = ?, status = ?, updatedAt = ? WHERE id = ?"
+      )
+      .run(firstResponseAt, status, nowIso, id);
+    return this.get(id, now);
+  }
+
+  /** Mark the email fully resolved / completed. */
+  complete(id: number, now: Date = new Date()): EnrichedMessage {
+    const existing = this.getRaw(id);
+    const nowIso = now.toISOString();
+    const firstResponseAt = existing.firstResponseAt ?? nowIso;
+    this.db
+      .prepare(
+        "UPDATE messages SET status = 'resolved', firstResponseAt = ?, resolvedAt = ?, updatedAt = ? WHERE id = ?"
+      )
+      .run(firstResponseAt, nowIso, nowIso, id);
+    return this.get(id, now);
   }
 
   remove(id: number): void {
@@ -103,20 +154,15 @@ export class MessageRepository {
     if (result.changes === 0) throw new NotFoundError(`Message ${id} not found`);
   }
 
-  stats(): { total: number; byStatus: Record<Status, number> } {
-    const rows = this.db
-      .prepare("SELECT status, COUNT(*) AS count FROM messages GROUP BY status")
-      .all() as { status: Status; count: number }[];
-    const byStatus: Record<Status, number> = {
-      new: 0,
-      in_progress: 0,
-      resolved: 0,
-    };
-    let total = 0;
-    for (const r of rows) {
-      byStatus[r.status] = r.count;
-      total += r.count;
-    }
-    return { total, byStatus };
+  kpis(now: Date = new Date()): Kpis {
+    return computeKpis(this.allRaw(), now, MAILBOX_ADDRESS);
+  }
+
+  aging(now: Date = new Date()): AgingBucket[] {
+    return computeAging(this.allRaw(), now);
+  }
+
+  trends(days = 14, now: Date = new Date()): TrendPoint[] {
+    return computeTrends(this.allRaw(), now, days);
   }
 }

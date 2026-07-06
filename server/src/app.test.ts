@@ -24,18 +24,28 @@ describe("Mailbox Intake API", () => {
     expect(res.body).toEqual([]);
   });
 
-  it("creates an intake message", async () => {
+  it("exposes mailbox + SLA config", async () => {
+    const res = await request(app).get("/api/config");
+    expect(res.status).toBe(200);
+    expect(res.body.mailbox).toContain("@");
+    expect(res.body.ackSlaMinutes).toBe(15);
+    expect(res.body.completionSlaMinutes).toBe(240);
+  });
+
+  it("creates an intake message with received time and pending SLA", async () => {
     const res = await request(app)
       .post("/api/messages")
-      .send({ sender: "user@example.com", subject: "Help", body: "Please help", priority: "high" });
+      .send({ sender: "user@example.com", subject: "Help", priority: "high" });
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
-      sender: "user@example.com",
       subject: "Help",
       status: "new",
       priority: "high",
+      ackSla: "pending",
+      completionSla: "pending",
     });
-    expect(res.body.id).toBeGreaterThan(0);
+    expect(res.body.receivedAt).toBeTruthy();
+    expect(res.body.firstResponseMinutes).toBeNull();
   });
 
   it("rejects an intake without a subject", async () => {
@@ -46,18 +56,41 @@ describe("Mailbox Intake API", () => {
     expect(res.body.error).toMatch(/subject/i);
   });
 
-  it("updates the status of a message", async () => {
+  it("acknowledging within SLA marks ack as met and computes response minutes", async () => {
     const created = await request(app)
       .post("/api/messages")
       .send({ sender: "user@example.com", subject: "Ticket" });
     const id = created.body.id;
 
-    const updated = await request(app)
-      .patch(`/api/messages/${id}`)
-      .send({ status: "resolved", assignee: "agent-1" });
-    expect(updated.status).toBe(200);
-    expect(updated.body.status).toBe("resolved");
-    expect(updated.body.assignee).toBe("agent-1");
+    const ack = await request(app).post(`/api/messages/${id}/acknowledge`);
+    expect(ack.status).toBe(200);
+    expect(ack.body.status).toBe("in_progress");
+    expect(ack.body.firstResponseAt).toBeTruthy();
+    expect(ack.body.ackSla).toBe("met");
+    expect(ack.body.firstResponseMinutes).toBeGreaterThanOrEqual(0);
+  });
+
+  it("computes breached ack SLA for an old unacknowledged email", async () => {
+    const oldReceived = new Date(Date.now() - 60 * 60_000).toISOString(); // 1h ago
+    const created = await request(app)
+      .post("/api/messages")
+      .send({ sender: "late@example.com", subject: "Old", receivedAt: oldReceived });
+    expect(created.body.ackSla).toBe("breached");
+    expect(created.body.completionSla).toBe("pending");
+    expect(created.body.ageMinutes).toBeGreaterThan(15);
+  });
+
+  it("completing an email records resolution and resolves it", async () => {
+    const created = await request(app)
+      .post("/api/messages")
+      .send({ sender: "user@example.com", subject: "Done soon" });
+    const id = created.body.id;
+
+    const done = await request(app).post(`/api/messages/${id}/complete`);
+    expect(done.status).toBe(200);
+    expect(done.body.status).toBe("resolved");
+    expect(done.body.resolvedAt).toBeTruthy();
+    expect(done.body.completionSla).toBe("met");
   });
 
   it("returns 404 for a missing message", async () => {
@@ -65,16 +98,50 @@ describe("Mailbox Intake API", () => {
     expect(res.status).toBe(404);
   });
 
-  it("reports stats grouped by status", async () => {
+  it("reports KPIs including SLA compliance", async () => {
+    // Two acknowledged-in-time + one breached (old, unacknowledged).
     await request(app).post("/api/messages").send({ sender: "a@x.com", subject: "one" });
-    await request(app).post("/api/messages").send({ sender: "b@x.com", subject: "two" });
-    const created = await request(app).post("/api/messages").send({ sender: "c@x.com", subject: "three" });
-    await request(app).patch(`/api/messages/${created.body.id}`).send({ status: "resolved" });
+    const two = await request(app).post("/api/messages").send({ sender: "b@x.com", subject: "two" });
+    await request(app).post(`/api/messages/${two.body.id}/acknowledge`);
+    await request(app)
+      .post("/api/messages")
+      .send({
+        sender: "c@x.com",
+        subject: "old",
+        receivedAt: new Date(Date.now() - 90 * 60_000).toISOString(),
+      });
 
-    const res = await request(app).get("/api/stats");
+    const res = await request(app).get("/api/kpis");
     expect(res.status).toBe(200);
-    expect(res.body.total).toBe(3);
-    expect(res.body.byStatus.new).toBe(2);
-    expect(res.body.byStatus.resolved).toBe(1);
+    expect(res.body.volume).toBe(3);
+    expect(res.body.open).toBe(3);
+    expect(res.body.ackBreaches).toBe(1);
+    expect(res.body.ackSlaCompliancePct).toBeLessThan(100);
+  });
+
+  it("buckets open emails by age", async () => {
+    await request(app).post("/api/messages").send({ sender: "fresh@x.com", subject: "fresh" });
+    await request(app)
+      .post("/api/messages")
+      .send({
+        sender: "old@x.com",
+        subject: "old",
+        receivedAt: new Date(Date.now() - 5 * 60 * 60_000).toISOString(),
+      });
+
+    const res = await request(app).get("/api/aging");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(4);
+    expect(res.body[0].count).toBe(1); // fresh in ack window
+    expect(res.body[3].count).toBe(1); // >4h breached
+  });
+
+  it("returns a trend series of the requested length", async () => {
+    await request(app).post("/api/messages").send({ sender: "a@x.com", subject: "today" });
+    const res = await request(app).get("/api/trends?days=7");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(7);
+    const today = res.body[res.body.length - 1];
+    expect(today.received).toBe(1);
   });
 });
