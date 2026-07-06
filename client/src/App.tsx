@@ -6,6 +6,7 @@ import {
   deleteMessage,
   fetchAging,
   fetchConfig,
+  fetchHeatmap,
   fetchKpis,
   fetchMessages,
   fetchTrends,
@@ -16,6 +17,7 @@ import {
   STATUSES,
   type AgingBucket,
   type AppConfig,
+  type Heatmap as HeatmapData,
   type IntakeMessage,
   type Kpis,
   type SlaState,
@@ -26,6 +28,7 @@ import { formatDateTime, formatMinutes } from "./format";
 import { KpiCards } from "./components/KpiCards";
 import { AgingChart } from "./components/AgingChart";
 import { TrendsChart } from "./components/TrendsChart";
+import { Heatmap } from "./components/Heatmap";
 
 const STATUS_LABELS: Record<Status, string> = {
   new: "New",
@@ -53,6 +56,7 @@ export default function App() {
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [aging, setAging] = useState<AgingBucket[]>([]);
   const [trends, setTrends] = useState<TrendPoint[]>([]);
+  const [heatmap, setHeatmap] = useState<HeatmapData | null>(null);
   const [filter, setFilter] = useState<string>("all");
   const [form, setForm] = useState({ ...emptyForm });
   const [showForm, setShowForm] = useState(false);
@@ -61,16 +65,18 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const [msgs, k, a, t] = await Promise.all([
+      const [msgs, k, a, t, h] = await Promise.all([
         fetchMessages(filter),
         fetchKpis(),
         fetchAging(),
         fetchTrends(14),
+        fetchHeatmap(),
       ]);
       setMessages(msgs);
       setKpis(k);
       setAging(a);
       setTrends(t);
+      setHeatmap(h);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load data");
@@ -140,6 +146,11 @@ export default function App() {
           <TrendsChart points={trends} />
         </section>
       </div>
+
+      <section className="panel">
+        <h2>Volume heatmap (day × hour)</h2>
+        <Heatmap data={heatmap} />
+      </section>
 
       <section className="panel">
         <div className="panel-header">
@@ -220,6 +231,7 @@ export default function App() {
             <thead>
               <tr>
                 <th>Subject / Sender</th>
+                <th>Folder</th>
                 <th>Received</th>
                 <th>Age</th>
                 <th>First response</th>
@@ -241,6 +253,12 @@ export default function App() {
                       {m.assignee ? ` · ${m.assignee}` : ""}
                     </div>
                   </td>
+                  <td className="nowrap">
+                    <span className="folder">
+                      <span className="folder-icon" aria-hidden="true">📁</span>
+                      {m.folder}
+                    </span>
+                  </td>
                   <td className="nowrap">{formatDateTime(m.receivedAt)}</td>
                   <td className="nowrap">{formatMinutes(m.ageMinutes)}</td>
                   <td className="nowrap">{formatMinutes(m.firstResponseMinutes)}</td>
@@ -261,6 +279,21 @@ export default function App() {
                   </td>
                   <td>
                     <div className="row-actions">
+                      {m.webLink ? (
+                        <a
+                          className="btn btn--sm"
+                          href={m.webLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open email in Outlook"
+                        >
+                          Open
+                        </a>
+                      ) : (
+                        <span className="btn btn--sm btn--disabled" title="No mailbox link">
+                          Open
+                        </span>
+                      )}
                       {m.status === "new" && (
                         <button
                           className="btn btn--sm"

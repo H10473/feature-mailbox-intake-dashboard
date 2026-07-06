@@ -16,6 +16,10 @@ time, volume, etc.).
   - **Completion SLA:** fully resolved within **4 hours**.
 - **Aging** — open emails bucketed by how long they have been waiting
   (`≤15m`, `15m–1h`, `1h–4h`, `>4h breached`).
+- **Volume heatmap** — received volume by day-of-week × hour-of-day.
+- **Mailbox folder** — the folder each email sits in (`Inbox`, `Processing`,
+  `Completed`, `Escalations`), plus a direct **Open** link to the message in
+  Outlook (`webLink`).
 
 SLA thresholds and the mailbox address are configurable via env vars
 (`MAILBOX_ADDRESS`, `ACK_SLA_MINUTES`, `COMPLETION_SLA_MINUTES`).
@@ -57,6 +61,7 @@ Base URL: `http://localhost:4000`
 | `GET` | `/api/kpis` | Volume, avg response/handle time, SLA compliance, breaches |
 | `GET` | `/api/aging` | Open emails bucketed by age |
 | `GET` | `/api/trends?days=14` | Daily received/resolved + response/SLA trend |
+| `GET` | `/api/heatmap` | Received volume by day-of-week × hour-of-day |
 | `GET` | `/api/messages?status=` | List emails (with derived SLA fields) |
 | `POST` | `/api/messages` | Log an incoming email |
 | `POST` | `/api/messages/:id/acknowledge` | Record first response (starts SLA clock stop) |

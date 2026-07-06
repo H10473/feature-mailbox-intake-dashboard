@@ -11,6 +11,8 @@ export interface IntakeMessage {
   id: number;
   messageId: string | null;
   mailbox: string;
+  folder: string;
+  webLink: string | null;
   sender: string;
   subject: string;
   body: string;
@@ -57,6 +59,19 @@ export interface TrendPoint {
   resolved: number;
   avgFirstResponseMinutes: number | null;
   ackSlaCompliancePct: number;
+}
+
+export interface HeatmapRow {
+  day: number;
+  label: string;
+  counts: number[];
+}
+
+export interface Heatmap {
+  hours: number[];
+  rows: HeatmapRow[];
+  max: number;
+  total: number;
 }
 
 export interface AppConfig {

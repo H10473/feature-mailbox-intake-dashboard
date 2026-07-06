@@ -19,6 +19,8 @@ export function createDb(dbPath: string): Database.Database {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       messageId TEXT,
       mailbox TEXT NOT NULL,
+      folder TEXT NOT NULL DEFAULT 'Inbox',
+      webLink TEXT,
       sender TEXT NOT NULL,
       subject TEXT NOT NULL,
       body TEXT NOT NULL DEFAULT '',
@@ -80,6 +82,8 @@ const ASSIGNEES = ["priya.n", "arjun.k", "meera.s", "rahul.d", "ananya.r"];
 interface SeedRow {
   messageId: string;
   mailbox: string;
+  folder: string;
+  webLink: string | null;
   sender: string;
   subject: string;
   body: string;
@@ -164,10 +168,22 @@ function generateSeed(now: Date, count = 90): SeedRow[] {
       received.setTime(now.getTime() - Math.floor(openAgeMin * 60_000));
     }
 
+    let folder: string;
+    if (status === "resolved") folder = "Completed";
+    else if (status === "in_progress") folder = "Processing";
+    else folder = priority === "urgent" ? "Escalations" : "Inbox";
+
+    const messageId = `AAMkAG${(100000 + i).toString(16)}Z@firstam`;
+    const webLink = `https://outlook.office365.com/owa/?ItemID=${encodeURIComponent(
+      messageId
+    )}&exvsurl=1&viewmodel=ReadMessageItem`;
+
     const createdAt = received.toISOString();
     rows.push({
-      messageId: `AAMk-${(1000 + i).toString(16)}@firstam`,
+      messageId,
       mailbox: MAILBOX_ADDRESS,
+      folder,
+      webLink,
       sender,
       subject,
       body: `Regarding ${subject}. Please review and advise on next steps.`,
@@ -196,9 +212,9 @@ export function seedIfEmpty(db: Database.Database, now: Date = new Date()): void
 
   const insert = db.prepare(
     `INSERT INTO messages
-       (messageId, mailbox, sender, subject, body, channel, priority, status, assignee, receivedAt, firstResponseAt, resolvedAt, createdAt, updatedAt)
+       (messageId, mailbox, folder, webLink, sender, subject, body, channel, priority, status, assignee, receivedAt, firstResponseAt, resolvedAt, createdAt, updatedAt)
      VALUES
-       (@messageId, @mailbox, @sender, @subject, @body, @channel, @priority, @status, @assignee, @receivedAt, @firstResponseAt, @resolvedAt, @createdAt, @updatedAt)`
+       (@messageId, @mailbox, @folder, @webLink, @sender, @subject, @body, @channel, @priority, @status, @assignee, @receivedAt, @firstResponseAt, @resolvedAt, @createdAt, @updatedAt)`
   );
   const insertMany = db.transaction((rows: SeedRow[]) => {
     for (const r of rows) insert.run(r);

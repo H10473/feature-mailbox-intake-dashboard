@@ -31,6 +31,10 @@ export function createApp(db: Database.Database): Express {
     res.json(repo.aging());
   });
 
+  app.get("/api/heatmap", (_req, res) => {
+    res.json(repo.heatmap());
+  });
+
   app.get("/api/trends", (req, res) => {
     const days = req.query.days ? Number(req.query.days) : 14;
     if (!Number.isFinite(days) || days < 1 || days > 90) {

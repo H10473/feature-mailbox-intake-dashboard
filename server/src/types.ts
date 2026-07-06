@@ -9,10 +9,20 @@ export type Status = (typeof STATUSES)[number];
 /** SLA outcome for a single email against a threshold. */
 export type SlaState = "met" | "breached" | "pending";
 
+export const FOLDERS = [
+  "Inbox",
+  "Processing",
+  "Completed",
+  "Escalations",
+] as const;
+export type Folder = (typeof FOLDERS)[number];
+
 export interface IntakeMessage {
   id: number;
   messageId: string | null;
   mailbox: string;
+  folder: string;
+  webLink: string | null;
   sender: string;
   subject: string;
   body: string;

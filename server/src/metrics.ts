@@ -151,6 +151,43 @@ export function computeAging(messages: IntakeMessage[], now: Date): AgingBucket[
   return buckets;
 }
 
+export const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export interface HeatmapRow {
+  day: number;
+  label: string;
+  counts: number[]; // length 24, index = hour
+}
+
+export interface Heatmap {
+  hours: number[];
+  rows: HeatmapRow[];
+  max: number;
+  total: number;
+}
+
+/** Volume of received emails by day-of-week (rows) and hour-of-day (columns). */
+export function computeHeatmap(messages: IntakeMessage[]): Heatmap {
+  const rows: HeatmapRow[] = DAY_LABELS.map((label, day) => ({
+    day,
+    label,
+    counts: new Array(24).fill(0),
+  }));
+
+  let max = 0;
+  let total = 0;
+  for (const msg of messages) {
+    const d = new Date(msg.receivedAt);
+    const day = d.getUTCDay();
+    const hour = d.getUTCHours();
+    const next = ++rows[day].counts[hour];
+    if (next > max) max = next;
+    total++;
+  }
+
+  return { hours: Array.from({ length: 24 }, (_, h) => h), rows, max, total };
+}
+
 export interface TrendPoint {
   date: string;
   received: number;

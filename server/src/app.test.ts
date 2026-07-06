@@ -136,6 +136,43 @@ describe("Mailbox Intake API", () => {
     expect(res.body[3].count).toBe(1); // >4h breached
   });
 
+  it("assigns folders and routes them through the workflow", async () => {
+    const normal = await request(app)
+      .post("/api/messages")
+      .send({ sender: "a@x.com", subject: "normal" });
+    expect(normal.body.folder).toBe("Inbox");
+
+    const urgent = await request(app)
+      .post("/api/messages")
+      .send({ sender: "b@x.com", subject: "urgent", priority: "urgent" });
+    expect(urgent.body.folder).toBe("Escalations");
+
+    const ack = await request(app).post(`/api/messages/${normal.body.id}/acknowledge`);
+    expect(ack.body.folder).toBe("Processing");
+
+    const done = await request(app).post(`/api/messages/${urgent.body.id}/complete`);
+    expect(done.body.folder).toBe("Completed");
+  });
+
+  it("returns a 7x24 day/hour heatmap", async () => {
+    await request(app)
+      .post("/api/messages")
+      .send({
+        sender: "a@x.com",
+        subject: "heat",
+        receivedAt: "2026-07-06T09:30:00.000Z", // Monday 09:00 UTC
+      });
+
+    const res = await request(app).get("/api/heatmap");
+    expect(res.status).toBe(200);
+    expect(res.body.rows).toHaveLength(7);
+    expect(res.body.hours).toHaveLength(24);
+    expect(res.body.total).toBe(1);
+    expect(res.body.max).toBe(1);
+    // Monday = day index 1, hour 9.
+    expect(res.body.rows[1].counts[9]).toBe(1);
+  });
+
   it("returns a trend series of the requested length", async () => {
     await request(app).post("/api/messages").send({ sender: "a@x.com", subject: "today" });
     const res = await request(app).get("/api/trends?days=7");

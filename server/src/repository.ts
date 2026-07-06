@@ -2,10 +2,12 @@ import type Database from "better-sqlite3";
 import { MAILBOX_ADDRESS } from "./config.js";
 import {
   computeAging,
+  computeHeatmap,
   computeKpis,
   computeTrends,
   enrich,
   type AgingBucket,
+  type Heatmap,
   type Kpis,
   type TrendPoint,
 } from "./metrics.js";
@@ -78,15 +80,17 @@ export class MessageRepository {
 
     const nowIso = now.toISOString();
     const receivedAt = input.receivedAt ?? nowIso;
+    const folder = priority === "urgent" ? "Escalations" : "Inbox";
     const result = this.db
       .prepare(
         `INSERT INTO messages
-           (messageId, mailbox, sender, subject, body, channel, priority, status, assignee, receivedAt, firstResponseAt, resolvedAt, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, NULL, NULL, ?, ?)`
+           (messageId, mailbox, folder, webLink, sender, subject, body, channel, priority, status, assignee, receivedAt, firstResponseAt, resolvedAt, createdAt, updatedAt)
+         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, 'new', ?, ?, NULL, NULL, ?, ?)`
       )
       .run(
         null,
         MAILBOX_ADDRESS,
+        folder,
         sender,
         subject,
         input.body ?? "",
@@ -128,11 +132,12 @@ export class MessageRepository {
     const nowIso = now.toISOString();
     const firstResponseAt = existing.firstResponseAt ?? nowIso;
     const status = existing.status === "new" ? "in_progress" : existing.status;
+    const folder = existing.status === "resolved" ? existing.folder : "Processing";
     this.db
       .prepare(
-        "UPDATE messages SET firstResponseAt = ?, status = ?, updatedAt = ? WHERE id = ?"
+        "UPDATE messages SET firstResponseAt = ?, status = ?, folder = ?, updatedAt = ? WHERE id = ?"
       )
-      .run(firstResponseAt, status, nowIso, id);
+      .run(firstResponseAt, status, folder, nowIso, id);
     return this.get(id, now);
   }
 
@@ -143,7 +148,7 @@ export class MessageRepository {
     const firstResponseAt = existing.firstResponseAt ?? nowIso;
     this.db
       .prepare(
-        "UPDATE messages SET status = 'resolved', firstResponseAt = ?, resolvedAt = ?, updatedAt = ? WHERE id = ?"
+        "UPDATE messages SET status = 'resolved', folder = 'Completed', firstResponseAt = ?, resolvedAt = ?, updatedAt = ? WHERE id = ?"
       )
       .run(firstResponseAt, nowIso, nowIso, id);
     return this.get(id, now);
@@ -164,5 +169,9 @@ export class MessageRepository {
 
   trends(days = 14, now: Date = new Date()): TrendPoint[] {
     return computeTrends(this.allRaw(), now, days);
+  }
+
+  heatmap(): Heatmap {
+    return computeHeatmap(this.allRaw());
   }
 }

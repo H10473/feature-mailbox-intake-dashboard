@@ -1,6 +1,7 @@
 import type {
   AgingBucket,
   AppConfig,
+  Heatmap,
   IntakeMessage,
   Kpis,
   TrendPoint,
@@ -40,6 +41,10 @@ export async function fetchAging(): Promise<AgingBucket[]> {
 
 export async function fetchTrends(days = 14): Promise<TrendPoint[]> {
   return handle<TrendPoint[]>(await fetch(`/api/trends?days=${days}`));
+}
+
+export async function fetchHeatmap(): Promise<Heatmap> {
+  return handle<Heatmap>(await fetch("/api/heatmap"));
 }
 
 export interface CreateInput {
