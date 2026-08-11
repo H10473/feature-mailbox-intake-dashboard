@@ -376,19 +376,17 @@ def render_frame(frame: int, total_frames: int) -> Image.Image:
     for i in range(len(STEPS)):
         world_x = i * CARD_SPACING
         dx = world_x - camera_x
-        z = 7.2 + abs(dx) * 0.78
-        scale = 1.28 / z
-        screen_x = WIDTH / 2 + dx * 236 / z
+        z = 1.0 + abs(dx) * 0.52
+        screen_x = WIDTH / 2 + dx * 150 / z
         bob = math.sin(frame / 18 + i) * 4
-        screen_y = 390 + abs(dx) * 6 + bob
+        screen_y = 386 + abs(dx) * 12 + bob
         active = max(0.0, 1.0 - abs(dx) / CARD_SPACING)
-        order.append((z, i, screen_x, screen_y + 40 * (1 - active)))
+        order.append((z, i, screen_x, screen_y + 88 * (1 - active)))
 
     for z, i, screen_x, screen_y in sorted(order, reverse=True):
         dx = i * CARD_SPACING - camera_x
         active = max(0.0, 1.0 - abs(dx) / CARD_SPACING)
-        scale = 1.02 + active * 0.45
-        scale *= 1.28 / z
+        scale = 0.22 + active * 0.58
         card = make_card(STEPS[i], active)
         paste_card(image, card, (screen_x, screen_y), scale, active)
 
