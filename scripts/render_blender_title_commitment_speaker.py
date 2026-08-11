@@ -141,9 +141,9 @@ def build_scene(output: Path) -> None:
     scene.render.fps = FPS
     scene.render.resolution_x = WIDTH
     scene.render.resolution_y = HEIGHT
-    scene.render.engine = "BLENDER_WORKBENCH"
-    scene.display.shading.light = "STUDIO"
-    scene.display.shading.color_type = "MATERIAL"
+    engines = {item.identifier for item in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items}
+    scene.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in engines else "BLENDER_EEVEE"
+    scene.eevee.taa_render_samples = 4
     scene.render.image_settings.file_format = "FFMPEG"
     scene.render.ffmpeg.format = "MPEG4"
     scene.render.ffmpeg.codec = "H264"
@@ -213,7 +213,7 @@ def build_scene(output: Path) -> None:
     for x in (-0.12, 0.12):
         parts.append(add_uv_sphere("eye white", (x, -0.285, 1.91), (0.055, 0.018, 0.038), eye_white))
         parts.append(add_uv_sphere("eye pupil", (x, -0.305, 1.91), (0.026, 0.010, 0.026), eye_dark))
-    mouth = add_uv_sphere("speaking mouth", (0.0, -0.305, 1.74), (0.085, 0.012, 0.026), mouth_mat)
+    mouth = add_uv_sphere("speaking mouth", (0.0, -0.325, 1.74), (0.115, 0.014, 0.040), mouth_mat)
     parts.append(mouth)
 
     for obj in parts:
@@ -224,17 +224,18 @@ def build_scene(output: Path) -> None:
     for obj in parts:
         obj.select_set(False)
 
-    for frame in range(1, TOTAL_FRAMES + 1, 6):
+    for frame in range(1, TOTAL_FRAMES + 1, 3):
         t = frame / FPS
-        presenter.location.z = 0.28 + math.sin(t * 2.2) * 0.025
-        presenter.rotation_euler = (0, 0, math.sin(t * 0.8) * 0.035)
+        presenter.location.z = 0.28 + math.sin(t * 2.2) * 0.075
+        presenter.rotation_euler = (0, 0, math.sin(t * 0.8) * 0.080)
         presenter.keyframe_insert(data_path="location", frame=frame)
         presenter.keyframe_insert(data_path="rotation_euler", frame=frame)
-        mouth.scale = (0.085, 0.012, 0.022 + (0.025 * (0.5 + 0.5 * math.sin(t * 18.0))))
+        mouth.scale = (0.115, 0.014, 0.026 + (0.085 * (0.5 + 0.5 * math.sin(t * 18.0))))
         mouth.keyframe_insert(data_path="scale", frame=frame)
-        right_arm.rotation_euler.rotate_axis("X", math.sin(t * 2.1) * 0.006)
+        right_arm.rotation_euler = (math.sin(t * 2.1) * 0.18, right_arm.rotation_euler.y, right_arm.rotation_euler.z)
         right_arm.keyframe_insert(data_path="rotation_euler", frame=frame)
-        right_hand.location.z = 1.57 + math.sin(t * 2.1) * 0.05
+        right_hand.location.x = 0.77 + math.sin(t * 1.4) * 0.09
+        right_hand.location.z = 1.57 + math.sin(t * 2.1) * 0.22
         right_hand.keyframe_insert(data_path="location", frame=frame)
 
     add_text("title", "Title Commitment Process", (0, -0.68, 2.62), 0.17, blue)
@@ -247,7 +248,7 @@ def build_scene(output: Path) -> None:
         panel = add_box(f"step panel {index + 1}", (0.88, -0.35, 1.45), (1.20, 0.035, 0.42), white)
         panel.rotation_euler = (math.radians(0), 0, 0)
         title_obj = add_text(f"step title {index + 1}", f"Step {index + 1}: {title}", (0.88, -0.72, 1.72), 0.070, blue)
-        body_obj = add_text(f"step body {index + 1}", body, (0.88, -0.72, 1.48), 0.044, text_mat)
+        body_obj = add_text(f"step body {index + 1}", body, (0.88, -0.72, 1.48), 0.052, text_mat)
         for obj in (panel, title_obj, body_obj):
             set_visible(obj, max(1, frame_start - 2), False)
             set_visible(obj, frame_start, True)
