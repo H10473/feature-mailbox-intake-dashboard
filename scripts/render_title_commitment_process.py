@@ -182,27 +182,61 @@ def draw_background(image: Image.Image, frame: int, total_frames: int) -> None:
     image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(46)))
 
 
-def draw_person(draw: ImageDraw.ImageDraw, cx: int, cy: int, scale: float = 1.0) -> None:
-    skin = (217, 166, 122)
-    hair = (51, 35, 28)
-    suit = (31, 42, 55)
-    blouse = (245, 245, 240)
-    draw.ellipse((cx - 24 * scale, cy - 88 * scale, cx + 24 * scale, cy - 40 * scale), fill=hair)
-    draw.ellipse((cx - 18 * scale, cy - 83 * scale, cx + 18 * scale, cy - 47 * scale), fill=skin)
-    draw.arc((cx - 9 * scale, cy - 68 * scale, cx + 9 * scale, cy - 56 * scale), 10, 170, fill=(110, 55, 45), width=max(1, int(2 * scale)))
+def draw_anime_eye(draw: ImageDraw.ImageDraw, cx: float, cy: float, scale: float, blink: float) -> None:
+    if blink > 0.82:
+        draw.line((cx - 9 * scale, cy, cx + 9 * scale, cy), fill=(33, 38, 54), width=max(2, int(3 * scale)))
+        return
+    draw.ellipse((cx - 10 * scale, cy - 12 * scale, cx + 10 * scale, cy + 12 * scale), fill=(255, 255, 255), outline=(33, 38, 54), width=max(1, int(2 * scale)))
+    draw.ellipse((cx - 5 * scale, cy - 7 * scale, cx + 7 * scale, cy + 8 * scale), fill=(42, 98, 155))
+    draw.ellipse((cx + 1 * scale, cy - 7 * scale, cx + 5 * scale, cy - 3 * scale), fill=(255, 255, 255))
+
+
+def draw_person(draw: ImageDraw.ImageDraw, cx: int, cy: int, scale: float = 1.0, phase: float = 0.0, active: float = 1.0) -> None:
+    skin = (235, 183, 142)
+    skin_shadow = (206, 130, 105)
+    hair = (49, 35, 64)
+    hair_hi = (92, 64, 125)
+    blazer = (29, 46, 76)
+    trim = (91, 169, 226)
+    blouse = (250, 250, 245)
+    float_y = math.sin(phase * 1.6) * 5 * active
+    wave = math.sin(phase * 4.2) * active
+    blink = (math.sin(phase * 2.8) + 1.0) / 2.0
+    cy = int(cy + float_y)
+
+    draw.ellipse((cx - 55 * scale, cy + 26 * scale, cx + 54 * scale, cy + 43 * scale), fill=(0, 0, 0, 42))
     draw.polygon(
         [
             (cx - 48 * scale, cy + 38 * scale),
-            (cx - 28 * scale, cy - 40 * scale),
-            (cx + 28 * scale, cy - 40 * scale),
+            (cx - 31 * scale, cy - 46 * scale),
+            (cx + 31 * scale, cy - 46 * scale),
             (cx + 48 * scale, cy + 38 * scale),
         ],
-        fill=suit,
+        fill=blazer,
     )
-    draw.polygon([(cx - 17 * scale, cy - 37 * scale), (cx, cy + 12 * scale), (cx + 17 * scale, cy - 37 * scale)], fill=blouse)
-    draw.line((cx - 33 * scale, cy - 8 * scale, cx - 62 * scale, cy - 28 * scale), fill=suit, width=max(2, int(8 * scale)))
-    draw.line((cx + 33 * scale, cy - 8 * scale, cx + 67 * scale, cy - 44 * scale), fill=suit, width=max(2, int(8 * scale)))
-    draw.ellipse((cx + 60 * scale, cy - 52 * scale, cx + 77 * scale, cy - 35 * scale), fill=skin)
+    draw.line((cx - 37 * scale, cy - 32 * scale, cx - 46 * scale, cy + 34 * scale), fill=trim, width=max(2, int(4 * scale)))
+    draw.line((cx + 37 * scale, cy - 32 * scale, cx + 46 * scale, cy + 34 * scale), fill=trim, width=max(2, int(4 * scale)))
+    draw.polygon([(cx - 19 * scale, cy - 43 * scale), (cx, cy + 12 * scale), (cx + 19 * scale, cy - 43 * scale)], fill=blouse)
+    draw.polygon([(cx - 9 * scale, cy - 14 * scale), (cx, cy + 14 * scale), (cx + 9 * scale, cy - 14 * scale)], fill=GOLD)
+
+    left_hand = (cx - 67 * scale, cy - 36 * scale + wave * 9 * scale)
+    right_hand = (cx + 70 * scale, cy - 67 * scale - wave * 15 * scale)
+    draw.line((cx - 34 * scale, cy - 12 * scale, left_hand[0], left_hand[1]), fill=blazer, width=max(3, int(9 * scale)))
+    draw.line((cx + 34 * scale, cy - 12 * scale, right_hand[0], right_hand[1]), fill=blazer, width=max(3, int(9 * scale)))
+    draw.ellipse((left_hand[0] - 9 * scale, left_hand[1] - 9 * scale, left_hand[0] + 9 * scale, left_hand[1] + 9 * scale), fill=skin)
+    draw.ellipse((right_hand[0] - 9 * scale, right_hand[1] - 9 * scale, right_hand[0] + 9 * scale, right_hand[1] + 9 * scale), fill=skin)
+    draw.line((right_hand[0] + 5 * scale, right_hand[1] - 6 * scale, right_hand[0] + 17 * scale, right_hand[1] - 23 * scale), fill=skin, width=max(2, int(4 * scale)))
+
+    draw.ellipse((cx - 35 * scale, cy - 112 * scale, cx + 35 * scale, cy - 42 * scale), fill=hair)
+    draw.ellipse((cx - 27 * scale, cy - 103 * scale, cx + 27 * scale, cy - 49 * scale), fill=skin)
+    draw.pieslice((cx - 36 * scale, cy - 116 * scale, cx + 34 * scale, cy - 52 * scale), 188, 350, fill=hair)
+    draw.polygon([(cx - 31 * scale, cy - 86 * scale), (cx - 6 * scale, cy - 116 * scale), (cx + 11 * scale, cy - 86 * scale)], fill=hair_hi)
+    draw.polygon([(cx - 3 * scale, cy - 89 * scale), (cx + 26 * scale, cy - 111 * scale), (cx + 23 * scale, cy - 72 * scale)], fill=hair)
+    draw.arc((cx - 10 * scale, cy - 70 * scale, cx + 12 * scale, cy - 55 * scale), 20, 160, fill=(135, 64, 77), width=max(1, int(2 * scale)))
+    draw_anime_eye(draw, cx - 11 * scale, cy - 78 * scale, scale, blink)
+    draw_anime_eye(draw, cx + 13 * scale, cy - 78 * scale, scale, blink)
+    draw.ellipse((cx + 19 * scale, cy - 66 * scale, cx + 25 * scale, cy - 61 * scale), fill=(246, 147, 156, 120))
+    draw.ellipse((cx - 25 * scale, cy - 66 * scale, cx - 19 * scale, cy - 61 * scale), fill=(246, 147, 156, 120))
 
 
 def draw_document(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], title: str) -> None:
@@ -291,7 +325,7 @@ def draw_icon(draw: ImageDraw.ImageDraw, step: dict[str, str | list[str]], box: 
         text_center(draw, (x2 - 118, y1 + 108), "COMMITMENT", RED, FONTS["small"])
 
 
-def make_card(step: dict[str, str | list[str]], active: float) -> Image.Image:
+def make_card(step: dict[str, str | list[str]], active: float, phase: float) -> Image.Image:
     card = Image.new("RGBA", (560, 360), (0, 0, 0, 0))
     draw = ImageDraw.Draw(card, "RGBA")
     draw.rounded_rectangle((0, 0, 559, 359), radius=28, fill=PAPER, outline=BLUE_DARK, width=5)
@@ -305,7 +339,26 @@ def make_card(step: dict[str, str | list[str]], active: float) -> Image.Image:
     draw.text((80, 18), title, fill=(255, 255, 255), font=FONTS["step"])
 
     draw_icon(draw, step, (22, 85, 316, 278))
-    draw_person(draw, 464, 258, 0.95)
+    draw_person(draw, 464, 258, 0.95, phase=phase, active=active)
+
+    if active > 0.45:
+        prompts = {
+            "1": "Review the order!",
+            "2": "Search records!",
+            "3": "Examine title!",
+            "4": "Build Schedule A!",
+            "5": "Add requirements!",
+            "6": "Quality check!",
+            "7": "Issue it!",
+            "8": "Great closing!",
+        }
+        bubble_alpha = int(235 * ease((active - 0.45) / 0.55))
+        bubble = Image.new("RGBA", card.size, (0, 0, 0, 0))
+        bubble_draw = ImageDraw.Draw(bubble, "RGBA")
+        bubble_draw.rounded_rectangle((342, 84, 538, 132), radius=18, fill=(255, 255, 255, bubble_alpha), outline=(91, 169, 226, bubble_alpha), width=3)
+        bubble_draw.polygon([(443, 132), (462, 154), (472, 130)], fill=(255, 255, 255, bubble_alpha), outline=(91, 169, 226, bubble_alpha))
+        text_center(bubble_draw, (440, 108), prompts.get(str(step["num"]), "Let's go!"), BLUE_DARK, FONTS["body_bold"])
+        card.alpha_composite(bubble)
 
     summary_lines = wrap_text(draw, str(step["summary"]), FONTS["body"], 500)
     y = 292
@@ -388,7 +441,7 @@ def render_frame(frame: int, total_frames: int) -> Image.Image:
         dx = i * CARD_SPACING - camera_x
         active = max(0.0, 1.0 - abs(dx) / CARD_SPACING)
         scale = 0.22 + active * 0.58
-        card = make_card(STEPS[i], active)
+        card = make_card(STEPS[i], active, phase=frame / FPS + i * 0.37)
         paste_card(image, card, (screen_x, screen_y), scale, active)
 
     progress_width = 760
