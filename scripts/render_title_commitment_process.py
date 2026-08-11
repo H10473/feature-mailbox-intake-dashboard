@@ -182,61 +182,65 @@ def draw_background(image: Image.Image, frame: int, total_frames: int) -> None:
     image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(46)))
 
 
-def draw_anime_eye(draw: ImageDraw.ImageDraw, cx: float, cy: float, scale: float, blink: float) -> None:
-    if blink > 0.82:
-        draw.line((cx - 9 * scale, cy, cx + 9 * scale, cy), fill=(33, 38, 54), width=max(2, int(3 * scale)))
+def draw_3d_eye(draw: ImageDraw.ImageDraw, cx: float, cy: float, scale: float, blink: float) -> None:
+    if blink > 0.9:
+        draw.arc((cx - 11 * scale, cy - 5 * scale, cx + 11 * scale, cy + 7 * scale), 0, 180, fill=(42, 28, 24), width=max(2, int(3 * scale)))
         return
-    draw.ellipse((cx - 10 * scale, cy - 12 * scale, cx + 10 * scale, cy + 12 * scale), fill=(255, 255, 255), outline=(33, 38, 54), width=max(1, int(2 * scale)))
-    draw.ellipse((cx - 5 * scale, cy - 7 * scale, cx + 7 * scale, cy + 8 * scale), fill=(42, 98, 155))
-    draw.ellipse((cx + 1 * scale, cy - 7 * scale, cx + 5 * scale, cy - 3 * scale), fill=(255, 255, 255))
+    draw.ellipse((cx - 10 * scale, cy - 7 * scale, cx + 10 * scale, cy + 7 * scale), fill=(252, 246, 238), outline=(50, 32, 25), width=max(1, int(2 * scale)))
+    draw.ellipse((cx - 3 * scale, cy - 5 * scale, cx + 6 * scale, cy + 5 * scale), fill=(91, 54, 32))
+    draw.ellipse((cx + 1 * scale, cy - 4 * scale, cx + 4 * scale, cy - 1 * scale), fill=(255, 255, 255))
 
 
 def draw_person(draw: ImageDraw.ImageDraw, cx: int, cy: int, scale: float = 1.0, phase: float = 0.0, active: float = 1.0) -> None:
-    skin = (235, 183, 142)
-    skin_shadow = (206, 130, 105)
-    hair = (49, 35, 64)
-    hair_hi = (92, 64, 125)
-    blazer = (29, 46, 76)
-    trim = (91, 169, 226)
-    blouse = (250, 250, 245)
+    skin = (233, 184, 146)
+    hair = (45, 34, 30)
+    hair_hi = (104, 82, 70)
+    jacket = (30, 34, 42)
+    blouse = (252, 250, 246)
     float_y = math.sin(phase * 1.6) * 5 * active
-    wave = math.sin(phase * 4.2) * active
-    blink = (math.sin(phase * 2.8) + 1.0) / 2.0
+    gesture = math.sin(phase * 3.7) * active
+    blink = (math.sin(phase * 2.4) + 1.0) / 2.0
     cy = int(cy + float_y)
 
-    draw.ellipse((cx - 55 * scale, cy + 26 * scale, cx + 54 * scale, cy + 43 * scale), fill=(0, 0, 0, 42))
+    draw.ellipse((cx - 59 * scale, cy + 29 * scale, cx + 59 * scale, cy + 47 * scale), fill=(0, 0, 0, 46))
     draw.polygon(
         [
-            (cx - 48 * scale, cy + 38 * scale),
-            (cx - 31 * scale, cy - 46 * scale),
-            (cx + 31 * scale, cy - 46 * scale),
-            (cx + 48 * scale, cy + 38 * scale),
+            (cx - 50 * scale, cy + 38 * scale),
+            (cx - 31 * scale, cy - 44 * scale),
+            (cx + 33 * scale, cy - 44 * scale),
+            (cx + 52 * scale, cy + 38 * scale),
         ],
-        fill=blazer,
+        fill=jacket,
     )
-    draw.line((cx - 37 * scale, cy - 32 * scale, cx - 46 * scale, cy + 34 * scale), fill=trim, width=max(2, int(4 * scale)))
-    draw.line((cx + 37 * scale, cy - 32 * scale, cx + 46 * scale, cy + 34 * scale), fill=trim, width=max(2, int(4 * scale)))
-    draw.polygon([(cx - 19 * scale, cy - 43 * scale), (cx, cy + 12 * scale), (cx + 19 * scale, cy - 43 * scale)], fill=blouse)
-    draw.polygon([(cx - 9 * scale, cy - 14 * scale), (cx, cy + 14 * scale), (cx + 9 * scale, cy - 14 * scale)], fill=GOLD)
+    draw.polygon([(cx - 26 * scale, cy - 43 * scale), (cx, cy + 13 * scale), (cx + 26 * scale, cy - 43 * scale)], fill=blouse)
+    draw.polygon([(cx - 19 * scale, cy - 41 * scale), (cx - 4 * scale, cy - 8 * scale), (cx - 28 * scale, cy - 20 * scale)], fill=(255, 255, 255))
+    draw.polygon([(cx + 19 * scale, cy - 41 * scale), (cx + 4 * scale, cy - 8 * scale), (cx + 28 * scale, cy - 20 * scale)], fill=(255, 255, 255))
+    draw.line((cx - 39 * scale, cy - 23 * scale, cx - 48 * scale, cy + 33 * scale), fill=(77, 82, 93), width=max(2, int(5 * scale)))
+    draw.line((cx + 39 * scale, cy - 23 * scale, cx + 49 * scale, cy + 33 * scale), fill=(12, 14, 18), width=max(2, int(5 * scale)))
 
-    left_hand = (cx - 67 * scale, cy - 36 * scale + wave * 9 * scale)
-    right_hand = (cx + 70 * scale, cy - 67 * scale - wave * 15 * scale)
-    draw.line((cx - 34 * scale, cy - 12 * scale, left_hand[0], left_hand[1]), fill=blazer, width=max(3, int(9 * scale)))
-    draw.line((cx + 34 * scale, cy - 12 * scale, right_hand[0], right_hand[1]), fill=blazer, width=max(3, int(9 * scale)))
-    draw.ellipse((left_hand[0] - 9 * scale, left_hand[1] - 9 * scale, left_hand[0] + 9 * scale, left_hand[1] + 9 * scale), fill=skin)
-    draw.ellipse((right_hand[0] - 9 * scale, right_hand[1] - 9 * scale, right_hand[0] + 9 * scale, right_hand[1] + 9 * scale), fill=skin)
-    draw.line((right_hand[0] + 5 * scale, right_hand[1] - 6 * scale, right_hand[0] + 17 * scale, right_hand[1] - 23 * scale), fill=skin, width=max(2, int(4 * scale)))
+    left_hand = (cx - 57 * scale, cy + 12 * scale + gesture * 4 * scale)
+    right_hand = (cx + 66 * scale, cy - 37 * scale - gesture * 10 * scale)
+    draw.line((cx - 34 * scale, cy - 9 * scale, left_hand[0], left_hand[1]), fill=jacket, width=max(3, int(10 * scale)))
+    draw.line((cx + 34 * scale, cy - 9 * scale, right_hand[0], right_hand[1]), fill=jacket, width=max(3, int(10 * scale)))
+    draw.ellipse((left_hand[0] - 13 * scale, left_hand[1] - 9 * scale, left_hand[0] + 15 * scale, left_hand[1] + 9 * scale), fill=skin)
+    draw.ellipse((right_hand[0] - 10 * scale, right_hand[1] - 10 * scale, right_hand[0] + 10 * scale, right_hand[1] + 10 * scale), fill=skin)
+    draw.line((right_hand[0] + 5 * scale, right_hand[1] - 5 * scale, right_hand[0] + 20 * scale, right_hand[1] - 18 * scale), fill=skin, width=max(2, int(4 * scale)))
 
-    draw.ellipse((cx - 35 * scale, cy - 112 * scale, cx + 35 * scale, cy - 42 * scale), fill=hair)
-    draw.ellipse((cx - 27 * scale, cy - 103 * scale, cx + 27 * scale, cy - 49 * scale), fill=skin)
-    draw.pieslice((cx - 36 * scale, cy - 116 * scale, cx + 34 * scale, cy - 52 * scale), 188, 350, fill=hair)
-    draw.polygon([(cx - 31 * scale, cy - 86 * scale), (cx - 6 * scale, cy - 116 * scale), (cx + 11 * scale, cy - 86 * scale)], fill=hair_hi)
-    draw.polygon([(cx - 3 * scale, cy - 89 * scale), (cx + 26 * scale, cy - 111 * scale), (cx + 23 * scale, cy - 72 * scale)], fill=hair)
-    draw.arc((cx - 10 * scale, cy - 70 * scale, cx + 12 * scale, cy - 55 * scale), 20, 160, fill=(135, 64, 77), width=max(1, int(2 * scale)))
-    draw_anime_eye(draw, cx - 11 * scale, cy - 78 * scale, scale, blink)
-    draw_anime_eye(draw, cx + 13 * scale, cy - 78 * scale, scale, blink)
-    draw.ellipse((cx + 19 * scale, cy - 66 * scale, cx + 25 * scale, cy - 61 * scale), fill=(246, 147, 156, 120))
-    draw.ellipse((cx - 25 * scale, cy - 66 * scale, cx - 19 * scale, cy - 61 * scale), fill=(246, 147, 156, 120))
+    draw.ellipse((cx - 39 * scale, cy - 112 * scale, cx + 39 * scale, cy - 34 * scale), fill=hair)
+    draw.pieslice((cx - 50 * scale, cy - 101 * scale, cx - 12 * scale, cy - 16 * scale), 82, 265, fill=hair)
+    draw.pieslice((cx + 10 * scale, cy - 102 * scale, cx + 52 * scale, cy - 15 * scale), -82, 98, fill=hair)
+    draw.ellipse((cx - 30 * scale, cy - 98 * scale, cx + 31 * scale, cy - 39 * scale), fill=skin)
+    draw.pieslice((cx - 31 * scale, cy - 105 * scale, cx + 31 * scale, cy - 59 * scale), 185, 355, fill=hair)
+    for offset in (-25, -15, -5, 5, 15):
+        draw.arc((cx + offset * scale, cy - 111 * scale, cx + (offset + 26) * scale, cy - 70 * scale), 200, 322, fill=hair_hi, width=max(1, int(2 * scale)))
+    draw.line((cx - 22 * scale, cy - 86 * scale, cx - 7 * scale, cy - 89 * scale), fill=(72, 50, 39), width=max(1, int(2 * scale)))
+    draw.line((cx + 6 * scale, cy - 89 * scale, cx + 22 * scale, cy - 86 * scale), fill=(72, 50, 39), width=max(1, int(2 * scale)))
+    draw_3d_eye(draw, cx - 11 * scale, cy - 78 * scale, scale, blink)
+    draw_3d_eye(draw, cx + 14 * scale, cy - 78 * scale, scale, blink)
+    draw.ellipse((cx + 18 * scale, cy - 66 * scale, cx + 24 * scale, cy - 61 * scale), fill=(240, 139, 138, 105))
+    draw.ellipse((cx - 24 * scale, cy - 66 * scale, cx - 18 * scale, cy - 61 * scale), fill=(240, 139, 138, 105))
+    draw.arc((cx - 11 * scale, cy - 67 * scale, cx + 15 * scale, cy - 49 * scale), 18, 162, fill=(124, 55, 61), width=max(1, int(3 * scale)))
+    draw.ellipse((cx + 11 * scale, cy - 96 * scale, cx + 16 * scale, cy - 91 * scale), fill=(255, 233, 205, 120))
 
 
 def draw_document(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], title: str) -> None:
