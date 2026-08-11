@@ -365,6 +365,7 @@ def render_frame(frame: int, total_frames: int) -> Image.Image:
 
     time_seconds = frame / FPS
     camera_x, active_index, local = camera_position(time_seconds)
+    display_index = max(0, min(len(STEPS) - 1, int(round(camera_x / CARD_SPACING))))
 
     intro = 1.0 - ease(min(1.0, time_seconds / 2.2))
     draw.text((52, 34), "TITLE", fill=(255, 255, 255, 210), font=FONTS["hero_small"])
@@ -396,11 +397,12 @@ def render_frame(frame: int, total_frames: int) -> Image.Image:
     draw.rounded_rectangle((progress_x, progress_y, progress_x + progress_width, progress_y + 16), radius=8, fill=(255, 255, 255, 55))
     progress = min(1.0, time_seconds / (len(STEPS) * SECONDS_PER_STEP))
     draw.rounded_rectangle((progress_x, progress_y, progress_x + int(progress_width * progress), progress_y + 16), radius=8, fill=GOLD)
-    label = f"Step {STEPS[active_index]['num']}: {STEPS[active_index]['title']}"
+    label = f"Step {STEPS[display_index]['num']}: {STEPS[display_index]['title']}"
     text_center(draw, (WIDTH / 2, HEIGHT - 40), label, (255, 255, 255), FONTS["body_bold"])
 
-    if active_index == len(STEPS) - 1 and local > 0.45:
-        alpha = int(210 * ease((local - 0.45) / 0.55))
+    final_focus = max(0.0, 1.0 - abs(((len(STEPS) - 1) * CARD_SPACING) - camera_x) / CARD_SPACING)
+    if display_index == len(STEPS) - 1 and final_focus > 0.55:
+        alpha = int(210 * ease((final_focus - 0.55) / 0.45))
         draw.rounded_rectangle((802, 106, 1195, 248), radius=24, fill=(255, 249, 214, alpha), outline=(255, 209, 72, alpha), width=4)
         lines = ["ACCURATE SEARCH", "CAREFUL EXAMINATION", "QUALITY REVIEW", "EFFECTIVE TITLE COMMITMENT"]
         for j, line in enumerate(lines):
