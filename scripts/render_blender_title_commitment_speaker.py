@@ -19,18 +19,17 @@ from mathutils import Vector
 WIDTH = 1280
 HEIGHT = 720
 FPS = 24
-DURATION_SECONDS = 36
+DURATION_SECONDS = 24
 TOTAL_FRAMES = FPS * DURATION_SECONDS
 
 NARRATION = (
-    "This neutral walkthrough explains the title commitment process. "
-    "First, receive and review the order, including the parties, property, and transaction details. "
-    "Second, search the public records for deeds, liens, taxes, judgments, and restrictions. "
-    "Third, examine the title search to understand ownership and items that may affect coverage. "
-    "Fourth, complete Schedule A with the proposed insured, policy amount, estate, and legal description. "
-    "Fifth, add requirements and exceptions so everyone knows what must be satisfied and what is not covered. "
-    "Sixth, review the commitment for accuracy before it is released. "
-    "Finally, issue the commitment to the transaction parties so the closing team can move forward."
+    "This walkthrough explains the title commitment process in neutral terms. "
+    "The order is received and checked for party, property, and transaction details. "
+    "Public records are searched for deeds, liens, judgments, taxes, and restrictions. "
+    "The title search is examined to understand ownership and matters affecting coverage. "
+    "Schedule A is prepared with the insured parties, policy amount, estate, and legal description. "
+    "Requirements and exceptions are added, then the commitment is reviewed for accuracy. "
+    "After review, the title commitment is issued to the transaction parties."
 )
 
 STEPS = [
@@ -142,8 +141,9 @@ def build_scene(output: Path) -> None:
     scene.render.fps = FPS
     scene.render.resolution_x = WIDTH
     scene.render.resolution_y = HEIGHT
-    scene.eevee.taa_render_samples = 32
-    scene.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in [item.identifier for item in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items] else "BLENDER_EEVEE"
+    scene.render.engine = "BLENDER_WORKBENCH"
+    scene.display.shading.light = "STUDIO"
+    scene.display.shading.color_type = "MATERIAL"
     scene.render.image_settings.file_format = "FFMPEG"
     scene.render.ffmpeg.format = "MPEG4"
     scene.render.ffmpeg.codec = "H264"
