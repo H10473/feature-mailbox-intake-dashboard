@@ -192,17 +192,17 @@ def build_scene(output: Path) -> None:
     presenter.location = (-1.05, -0.35, 0.28)
 
     parts: list[bpy.types.Object] = []
-    parts.append(add_uv_sphere("head", (0, 0, 1.82), (0.34, 0.30, 0.40), skin))
-    parts.append(add_uv_sphere("hair shell", (0, 0.05, 1.88), (0.41, 0.34, 0.46), hair))
-    parts.append(add_uv_sphere("left side hair", (-0.31, -0.01, 1.56), (0.11, 0.12, 0.50), hair))
-    parts.append(add_uv_sphere("right side hair", (0.31, -0.01, 1.56), (0.11, 0.12, 0.50), hair))
-    for index, x in enumerate((-0.18, -0.06, 0.06, 0.18)):
-        bang = add_uv_sphere(f"bang {index}", (x, -0.24, 2.13 - abs(x) * 0.12), (0.10, 0.08, 0.22), hair_highlight if index == 1 else hair)
+    parts.append(add_uv_sphere("head", (0, -0.02, 1.82), (0.36, 0.28, 0.40), skin))
+    parts.append(add_uv_sphere("back hair cap", (0, 0.13, 1.94), (0.39, 0.15, 0.34), hair))
+    parts.append(add_uv_sphere("left side hair", (-0.31, -0.03, 1.57), (0.08, 0.08, 0.46), hair))
+    parts.append(add_uv_sphere("right side hair", (0.31, -0.03, 1.57), (0.08, 0.08, 0.46), hair))
+    for index, x in enumerate((-0.20, -0.08, 0.04, 0.15)):
+        bang = add_uv_sphere(f"bang {index}", (x, -0.25, 2.10 - abs(x) * 0.10), (0.075, 0.055, 0.18), hair_highlight if index == 1 else hair)
         bang.rotation_euler[1] = math.radians(12 if x < 0 else -12)
         parts.append(bang)
 
-    parts.append(add_uv_sphere("torso blazer", (0, 0, 0.92), (0.42, 0.20, 0.58), blazer))
-    parts.append(add_uv_sphere("white blouse panel", (0, -0.18, 0.96), (0.19, 0.05, 0.40), blouse))
+    parts.append(add_box("shouldered blazer", (0, 0.02, 0.92), (0.38, 0.13, 0.46), blazer))
+    parts.append(add_uv_sphere("white blouse panel", (0, -0.15, 0.99), (0.16, 0.045, 0.34), blouse))
     parts.append(add_cylinder_between("left upper arm", (-0.33, 0, 1.22), (-0.62, -0.04, 0.82), 0.055, blazer))
     right_arm = add_cylinder_between("right speaking arm", (0.34, 0, 1.22), (0.73, -0.08, 1.55), 0.055, blazer)
     parts.append(right_arm)
