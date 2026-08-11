@@ -227,6 +227,157 @@ def draw_shaded_capsule(
     draw_shaded_ellipse(draw, (end[0] - r, end[1] - r, end[0] + r, end[1] + r), base, shadow, blend(base, (255, 255, 255), 0.2))
 
 
+def vec_sub(a: tuple[float, float, float], b: tuple[float, float, float]) -> tuple[float, float, float]:
+    return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+
+def vec_cross(a: tuple[float, float, float], b: tuple[float, float, float]) -> tuple[float, float, float]:
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+
+def vec_dot(a: tuple[float, float, float], b: tuple[float, float, float]) -> float:
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
+def vec_norm(a: tuple[float, float, float]) -> tuple[float, float, float]:
+    length = math.sqrt(max(1e-9, vec_dot(a, a)))
+    return (a[0] / length, a[1] / length, a[2] / length)
+
+
+def rotate_y(point: tuple[float, float, float], yaw: float) -> tuple[float, float, float]:
+    cos_y = math.cos(yaw)
+    sin_y = math.sin(yaw)
+    return (point[0] * cos_y + point[2] * sin_y, point[1], -point[0] * sin_y + point[2] * cos_y)
+
+
+def add_ellipsoid(
+    meshes: list[tuple[list[tuple[float, float, float]], list[tuple[int, int, int]], tuple[int, int, int]]],
+    center: tuple[float, float, float],
+    radii: tuple[float, float, float],
+    color: tuple[int, int, int],
+    rings: int = 10,
+    segments: int = 18,
+) -> None:
+    vertices: list[tuple[float, float, float]] = []
+    faces: list[tuple[int, int, int]] = []
+    for ring in range(rings + 1):
+        theta = math.pi * ring / rings
+        for segment in range(segments):
+            phi = 2 * math.pi * segment / segments
+            vertices.append(
+                (
+                    center[0] + radii[0] * math.sin(theta) * math.cos(phi),
+                    center[1] + radii[1] * math.cos(theta),
+                    center[2] + radii[2] * math.sin(theta) * math.sin(phi),
+                )
+            )
+    for ring in range(rings):
+        for segment in range(segments):
+            a = ring * segments + segment
+            b = ring * segments + (segment + 1) % segments
+            c = (ring + 1) * segments + segment
+            d = (ring + 1) * segments + (segment + 1) % segments
+            faces.append((a, c, b))
+            faces.append((b, c, d))
+    meshes.append((vertices, faces, color))
+
+
+def add_capsule(
+    meshes: list[tuple[list[tuple[float, float, float]], list[tuple[int, int, int]], tuple[int, int, int]]],
+    start: tuple[float, float, float],
+    end: tuple[float, float, float],
+    radius: float,
+    color: tuple[int, int, int],
+    segments: int = 14,
+) -> None:
+    direction = vec_norm(vec_sub(end, start))
+    side = vec_norm(vec_cross(direction, (0.0, 0.0, 1.0)))
+    if abs(vec_dot(side, side)) < 1e-6:
+        side = (1.0, 0.0, 0.0)
+    up = vec_norm(vec_cross(side, direction))
+    vertices: list[tuple[float, float, float]] = []
+    faces: list[tuple[int, int, int]] = []
+    for point in (start, end):
+        for segment in range(segments):
+            angle = 2 * math.pi * segment / segments
+            vertices.append(
+                (
+                    point[0] + radius * (math.cos(angle) * side[0] + math.sin(angle) * up[0]),
+                    point[1] + radius * (math.cos(angle) * side[1] + math.sin(angle) * up[1]),
+                    point[2] + radius * (math.cos(angle) * side[2] + math.sin(angle) * up[2]),
+                )
+            )
+    for segment in range(segments):
+        a = segment
+        b = (segment + 1) % segments
+        c = segments + segment
+        d = segments + (segment + 1) % segments
+        faces.append((a, c, b))
+        faces.append((b, c, d))
+    meshes.append((vertices, faces, color))
+    add_ellipsoid(meshes, start, (radius, radius, radius), color, rings=6, segments=segments)
+    add_ellipsoid(meshes, end, (radius, radius, radius), color, rings=6, segments=segments)
+
+
+def render_presenter_3d_sprite(phase: float, active: float, size: tuple[int, int] = (178, 250)) -> Image.Image:
+    meshes: list[tuple[list[tuple[float, float, float]], list[tuple[int, int, int]], tuple[int, int, int]]] = []
+    skin = (232, 181, 143)
+    hair = (45, 34, 30)
+    jacket = (29, 33, 42)
+    blouse = (252, 250, 246)
+    gesture = math.sin(phase * 3.6) * active
+    yaw = math.sin(phase * 0.9) * 0.12
+
+    add_ellipsoid(meshes, (0.0, 0.45, 0.0), (0.52, 0.72, 0.28), jacket)
+    add_ellipsoid(meshes, (0.0, 0.48, -0.19), (0.25, 0.52, 0.08), blouse, rings=8, segments=14)
+    add_capsule(meshes, (-0.34, 0.82, 0.02), (-0.70, 0.23 + gesture * 0.04, -0.12), 0.08, jacket)
+    add_capsule(meshes, (0.36, 0.82, 0.02), (0.68, 1.10 - gesture * 0.10, -0.12), 0.08, jacket)
+    add_ellipsoid(meshes, (-0.74, 0.20 + gesture * 0.04, -0.12), (0.13, 0.09, 0.10), skin, rings=7, segments=14)
+    add_ellipsoid(meshes, (0.70, 1.11 - gesture * 0.10, -0.12), (0.10, 0.10, 0.10), skin, rings=7, segments=14)
+
+    add_ellipsoid(meshes, (0.0, 1.42, 0.0), (0.44, 0.50, 0.38), hair, rings=10, segments=18)
+    add_ellipsoid(meshes, (0.0, 1.34, -0.08), (0.34, 0.39, 0.30), skin, rings=12, segments=20)
+    add_ellipsoid(meshes, (-0.34, 1.23, 0.04), (0.12, 0.47, 0.12), hair, rings=8, segments=14)
+    add_ellipsoid(meshes, (0.34, 1.23, 0.04), (0.12, 0.47, 0.12), hair, rings=8, segments=14)
+    for x in (-0.20, -0.08, 0.04, 0.16):
+        add_ellipsoid(meshes, (x, 1.56, -0.20), (0.12, 0.22, 0.08), hair, rings=7, segments=12)
+
+    faces_to_draw: list[tuple[float, list[tuple[float, float]], tuple[int, int, int]]] = []
+    light = vec_norm((-0.45, 0.75, -0.55))
+    sprite_scale = 80
+    cx = size[0] / 2
+    cy = size[1] - 34
+    for vertices, faces, color in meshes:
+        rotated = [rotate_y(vertex, yaw) for vertex in vertices]
+        for face in faces:
+            p1, p2, p3 = rotated[face[0]], rotated[face[1]], rotated[face[2]]
+            normal = vec_norm(vec_cross(vec_sub(p2, p1), vec_sub(p3, p1)))
+            shade = 0.42 + max(0.0, vec_dot(normal, light)) * 0.58
+            shaded = tuple(max(0, min(255, int(component * shade))) for component in color)
+            projected = [(cx + p[0] * sprite_scale, cy - p[1] * sprite_scale + p[2] * 8) for p in (p1, p2, p3)]
+            faces_to_draw.append(((p1[2] + p2[2] + p3[2]) / 3, projected, shaded))
+
+    sprite = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(sprite, "RGBA")
+    draw.ellipse((18, size[1] - 28, size[0] - 18, size[1] - 10), fill=(0, 0, 0, 45))
+    for _, projected, shaded in sorted(faces_to_draw, key=lambda item: item[0], reverse=True):
+        draw.polygon(projected, fill=shaded + (255,))
+
+    blink = (math.sin(phase * 2.4) + 1.0) / 2.0
+    if blink > 0.9:
+        draw.line((cx - 22, cy - 109, cx - 8, cy - 109), fill=(48, 31, 25), width=2)
+        draw.line((cx + 8, cy - 109, cx + 22, cy - 109), fill=(48, 31, 25), width=2)
+    else:
+        draw.ellipse((cx - 22, cy - 116, cx - 8, cy - 104), fill=(252, 246, 238), outline=(48, 31, 25), width=2)
+        draw.ellipse((cx + 8, cy - 116, cx + 22, cy - 104), fill=(252, 246, 238), outline=(48, 31, 25), width=2)
+        draw.ellipse((cx - 15, cy - 113, cx - 9, cy - 106), fill=(84, 50, 31))
+        draw.ellipse((cx + 15, cy - 113, cx + 21, cy - 106), fill=(84, 50, 31))
+    draw.arc((cx - 13, cy - 99, cx + 15, cy - 81), 18, 162, fill=(126, 52, 62), width=3)
+    draw.arc((cx - 30, cy - 122, cx - 6, cy - 112), 190, 345, fill=(82, 61, 51), width=3)
+    draw.arc((cx + 6, cy - 122, cx + 30, cy - 112), 195, 350, fill=(82, 61, 51), width=3)
+    return sprite
+
+
 def draw_person(draw: ImageDraw.ImageDraw, cx: int, cy: int, scale: float = 1.0, phase: float = 0.0, active: float = 1.0) -> None:
     skin = (233, 184, 146)
     hair = (45, 34, 30)
@@ -380,7 +531,8 @@ def make_card(step: dict[str, str | list[str]], active: float, phase: float) -> 
     draw.text((80, 18), title, fill=(255, 255, 255), font=FONTS["step"])
 
     draw_icon(draw, step, (22, 85, 316, 278))
-    draw_person(draw, 464, 258, 0.95, phase=phase, active=active)
+    presenter = render_presenter_3d_sprite(phase, active)
+    card.alpha_composite(presenter, (360, 94))
 
     if active > 0.45:
         prompts = {
