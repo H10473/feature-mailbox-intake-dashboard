@@ -191,6 +191,42 @@ def draw_3d_eye(draw: ImageDraw.ImageDraw, cx: float, cy: float, scale: float, b
     draw.ellipse((cx + 1 * scale, cy - 4 * scale, cx + 4 * scale, cy - 1 * scale), fill=(255, 255, 255))
 
 
+def draw_shaded_ellipse(
+    draw: ImageDraw.ImageDraw,
+    box: tuple[float, float, float, float],
+    base: tuple[int, int, int],
+    shadow: tuple[int, int, int],
+    highlight: tuple[int, int, int],
+    highlight_shift: tuple[float, float] = (-0.22, -0.28),
+) -> None:
+    x1, y1, x2, y2 = box
+    draw.ellipse(box, fill=shadow)
+    steps = 18
+    for i in range(steps, 0, -1):
+        t = i / steps
+        inset_x = (x2 - x1) * (1.0 - t) * 0.45
+        inset_y = (y2 - y1) * (1.0 - t) * 0.45
+        cx_shift = (x2 - x1) * highlight_shift[0] * (1.0 - t)
+        cy_shift = (y2 - y1) * highlight_shift[1] * (1.0 - t)
+        color = blend(base, highlight, (1.0 - t) * 0.55)
+        draw.ellipse((x1 + inset_x + cx_shift, y1 + inset_y + cy_shift, x2 - inset_x + cx_shift, y2 - inset_y + cy_shift), fill=color)
+
+
+def draw_shaded_capsule(
+    draw: ImageDraw.ImageDraw,
+    start: tuple[float, float],
+    end: tuple[float, float],
+    width: float,
+    base: tuple[int, int, int],
+    shadow: tuple[int, int, int],
+) -> None:
+    draw.line((start[0], start[1], end[0], end[1]), fill=shadow, width=max(1, int(width)))
+    draw.line((start[0] - width * 0.08, start[1] - width * 0.12, end[0] - width * 0.08, end[1] - width * 0.12), fill=base, width=max(1, int(width * 0.72)))
+    r = width / 2
+    draw_shaded_ellipse(draw, (start[0] - r, start[1] - r, start[0] + r, start[1] + r), base, shadow, blend(base, (255, 255, 255), 0.2))
+    draw_shaded_ellipse(draw, (end[0] - r, end[1] - r, end[0] + r, end[1] + r), base, shadow, blend(base, (255, 255, 255), 0.2))
+
+
 def draw_person(draw: ImageDraw.ImageDraw, cx: int, cy: int, scale: float = 1.0, phase: float = 0.0, active: float = 1.0) -> None:
     skin = (233, 184, 146)
     hair = (45, 34, 30)
@@ -212,6 +248,7 @@ def draw_person(draw: ImageDraw.ImageDraw, cx: int, cy: int, scale: float = 1.0,
         ],
         fill=jacket,
     )
+    draw.polygon([(cx - 45 * scale, cy + 34 * scale), (cx - 26 * scale, cy - 35 * scale), (cx + 7 * scale, cy + 35 * scale)], fill=(53, 58, 70, 180))
     draw.polygon([(cx - 26 * scale, cy - 43 * scale), (cx, cy + 13 * scale), (cx + 26 * scale, cy - 43 * scale)], fill=blouse)
     draw.polygon([(cx - 19 * scale, cy - 41 * scale), (cx - 4 * scale, cy - 8 * scale), (cx - 28 * scale, cy - 20 * scale)], fill=(255, 255, 255))
     draw.polygon([(cx + 19 * scale, cy - 41 * scale), (cx + 4 * scale, cy - 8 * scale), (cx + 28 * scale, cy - 20 * scale)], fill=(255, 255, 255))
@@ -220,16 +257,16 @@ def draw_person(draw: ImageDraw.ImageDraw, cx: int, cy: int, scale: float = 1.0,
 
     left_hand = (cx - 57 * scale, cy + 12 * scale + gesture * 4 * scale)
     right_hand = (cx + 66 * scale, cy - 37 * scale - gesture * 10 * scale)
-    draw.line((cx - 34 * scale, cy - 9 * scale, left_hand[0], left_hand[1]), fill=jacket, width=max(3, int(10 * scale)))
-    draw.line((cx + 34 * scale, cy - 9 * scale, right_hand[0], right_hand[1]), fill=jacket, width=max(3, int(10 * scale)))
-    draw.ellipse((left_hand[0] - 13 * scale, left_hand[1] - 9 * scale, left_hand[0] + 15 * scale, left_hand[1] + 9 * scale), fill=skin)
-    draw.ellipse((right_hand[0] - 10 * scale, right_hand[1] - 10 * scale, right_hand[0] + 10 * scale, right_hand[1] + 10 * scale), fill=skin)
+    draw_shaded_capsule(draw, (cx - 34 * scale, cy - 9 * scale), left_hand, 10 * scale, jacket, (9, 11, 15))
+    draw_shaded_capsule(draw, (cx + 34 * scale, cy - 9 * scale), right_hand, 10 * scale, jacket, (9, 11, 15))
+    draw_shaded_ellipse(draw, (left_hand[0] - 13 * scale, left_hand[1] - 9 * scale, left_hand[0] + 15 * scale, left_hand[1] + 9 * scale), skin, (181, 110, 86), (255, 221, 188))
+    draw_shaded_ellipse(draw, (right_hand[0] - 10 * scale, right_hand[1] - 10 * scale, right_hand[0] + 10 * scale, right_hand[1] + 10 * scale), skin, (181, 110, 86), (255, 221, 188))
     draw.line((right_hand[0] + 5 * scale, right_hand[1] - 5 * scale, right_hand[0] + 20 * scale, right_hand[1] - 18 * scale), fill=skin, width=max(2, int(4 * scale)))
 
-    draw.ellipse((cx - 39 * scale, cy - 112 * scale, cx + 39 * scale, cy - 34 * scale), fill=hair)
+    draw_shaded_ellipse(draw, (cx - 39 * scale, cy - 112 * scale, cx + 39 * scale, cy - 34 * scale), hair, (20, 15, 13), hair_hi)
     draw.pieslice((cx - 50 * scale, cy - 101 * scale, cx - 12 * scale, cy - 16 * scale), 82, 265, fill=hair)
     draw.pieslice((cx + 10 * scale, cy - 102 * scale, cx + 52 * scale, cy - 15 * scale), -82, 98, fill=hair)
-    draw.ellipse((cx - 30 * scale, cy - 98 * scale, cx + 31 * scale, cy - 39 * scale), fill=skin)
+    draw_shaded_ellipse(draw, (cx - 30 * scale, cy - 98 * scale, cx + 31 * scale, cy - 39 * scale), skin, (185, 112, 88), (255, 224, 190))
     draw.pieslice((cx - 31 * scale, cy - 105 * scale, cx + 31 * scale, cy - 59 * scale), 185, 355, fill=hair)
     for offset in (-25, -15, -5, 5, 15):
         draw.arc((cx + offset * scale, cy - 111 * scale, cx + (offset + 26) * scale, cy - 70 * scale), 200, 322, fill=hair_hi, width=max(1, int(2 * scale)))
