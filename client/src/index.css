@@ -539,6 +539,158 @@ a.btn {
   text-align: center;
 }
 
+/* Rewards rolling screen */
+.rewards-panel {
+  background: linear-gradient(135deg, #1a2744 0%, #1e293b 45%, #1a2f3d 100%);
+  border: 1px solid #3b4f6b;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.rewards-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 85% 20%, rgba(99, 102, 241, 0.12), transparent 55%),
+    radial-gradient(ellipse at 10% 80%, rgba(245, 158, 11, 0.08), transparent 50%);
+  pointer-events: none;
+}
+.rewards-panel__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+.rewards-panel__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.rewards-panel__label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rewards-ticker {
+  position: relative;
+  min-height: 9rem;
+}
+.rewards-slide {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1.25rem;
+  align-items: center;
+  animation: rewards-fade-in 0.6s ease;
+}
+@keyframes rewards-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rewards-slide__badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 10px;
+  min-width: 7.5rem;
+  text-align: center;
+}
+.rewards-slide__quarter {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #fbbf24;
+}
+.rewards-slide__award {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #e2e8f0;
+}
+.rewards-slide__body {
+  position: relative;
+}
+.rewards-slide__presented {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.rewards-slide__names {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #f8fafc;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-style: italic;
+}
+.rewards-slide__highlight {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rewards-slide__message {
+  margin: 0 0 0.4rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+  max-width: 52rem;
+}
+.rewards-slide__tagline {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.rewards-slide__icons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  opacity: 0.85;
+}
+.rewards-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  position: relative;
+}
+.rewards-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.rewards-dot--active {
+  background: var(--accent);
+  transform: scale(1.2);
+}
+
 @media (max-width: 900px) {
   .kpis {
     grid-template-columns: repeat(2, 1fr);
@@ -549,5 +701,16 @@ a.btn {
   .msg-table {
     display: block;
     overflow-x: auto;
+  }
+  .rewards-slide {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .rewards-slide__badge {
+    margin: 0 auto;
+  }
+  .rewards-slide__icons {
+    flex-direction: row;
+    justify-content: center;
   }
 }

@@ -29,6 +29,7 @@ import { KpiCards } from "./components/KpiCards";
 import { AgingChart } from "./components/AgingChart";
 import { TrendsChart } from "./components/TrendsChart";
 import { Heatmap } from "./components/Heatmap";
+import { RewardsTicker } from "./components/RewardsTicker";
 
 const STATUS_LABELS: Record<Status, string> = {
   new: "New",
@@ -133,6 +134,8 @@ export default function App() {
       </header>
 
       {error && <div className="banner banner--error">{error}</div>}
+
+      <RewardsTicker />
 
       <KpiCards kpis={kpis} />
 
