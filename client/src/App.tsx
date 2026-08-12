@@ -30,6 +30,7 @@ import { AgingChart } from "./components/AgingChart";
 import { TrendsChart } from "./components/TrendsChart";
 import { Heatmap } from "./components/Heatmap";
 import { RewardsTicker } from "./components/RewardsTicker";
+import { GoFlexBusinessUnit } from "./components/GoFlexBusinessUnit";
 
 const STATUS_LABELS: Record<Status, string> = {
   new: "New",
@@ -136,6 +137,8 @@ export default function App() {
       {error && <div className="banner banner--error">{error}</div>}
 
       <RewardsTicker />
+
+      <GoFlexBusinessUnit />
 
       <KpiCards kpis={kpis} />
 

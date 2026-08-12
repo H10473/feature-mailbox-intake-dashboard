@@ -691,6 +691,121 @@ a.btn {
   transform: scale(1.2);
 }
 
+/* GO-Flex Business Unit */
+.goflex-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.goflex-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.goflex-panel__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.goflex-panel__description {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  max-width: 42rem;
+}
+.goflex-panel__label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.goflex-project {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem;
+}
+.goflex-project__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.goflex-project__header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.goflex-project__period {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.goflex-project__tag {
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--blue);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.goflex-project__summary {
+  margin: 0 0 1rem;
+  line-height: 1.55;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+.goflex-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.goflex-metric {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.goflex-metric__label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.goflex-metric__value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.goflex-metric__detail {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.goflex-highlights {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+.goflex-highlights li + li {
+  margin-top: 0.35rem;
+}
+
 @media (max-width: 900px) {
   .kpis {
     grid-template-columns: repeat(2, 1fr);
@@ -712,5 +827,8 @@ a.btn {
   .rewards-slide__icons {
     flex-direction: row;
     justify-content: center;
+  }
+  .goflex-metrics {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
