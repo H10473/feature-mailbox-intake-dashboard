@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+*.log
+*.tsbuildinfo
+.DS_Store
+
+# Local database / data files
+server/data/*.db
+server/data/*.db-*
+*.sqlite
+*.sqlite3
+
+# Env
+.env
+.env.local
