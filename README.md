@@ -37,6 +37,22 @@ npm install      # install all workspace dependencies
 npm run dev      # start API (:4000) + Vite dev server (:5173)
 ```
 
+### Windows local folder (`C:\D data\Hemanth\Cursor\Project`)
+
+From PowerShell:
+
+```powershell
+# Option A: automated setup script
+powershell -ExecutionPolicy Bypass -File scripts/setup-local-windows.ps1
+
+# Option B: manual clone
+New-Item -ItemType Directory -Force -Path "C:\D data\Hemanth\Cursor\Project"
+cd "C:\D data\Hemanth\Cursor\Project"
+git clone https://github.com/H10473/feature-mailbox-intake-dashboard.git .
+npm install
+npm run dev
+```
+
 Then open http://localhost:5173. On first run the database is created at
 `server/data/intake.db` and seeded with ~90 representative emails spread across
 14 days so the KPIs, trends, and aging views are populated.
