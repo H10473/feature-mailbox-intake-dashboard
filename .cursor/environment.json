@@ -1,4 +1,5 @@
 {
+  "name": "mailbox-intake-dashboard",
   "install": "npm install",
   "terminals": [
     {
